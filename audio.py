@@ -5,16 +5,11 @@ import sys
 import threading
 import argparse
 
+DEBUG = False
+
 pwm = None
 
 # needed due to how it's played
-def signal_handler(sig, frame):
-    pwm.disable()
-    sys.exit(0)
-
-for sig in ('TERM', 'HUP', 'INT'):
-    signal.signal(getattr(signal, 'SIG'+sig), signal_handler)
-
 class PWMAudio:
     chip = 0
     device = 0
@@ -118,7 +113,8 @@ def play(filename, track, channel):
         midi.parse()
         track = midi.tracks[track]
         track.parse()
-        print(midi.division.division)
+        if DEBUG:
+            print(midi.division.division)
         tempo = 1 / midi.division.division
 
         started = False
@@ -133,24 +129,29 @@ def play(filename, track, channel):
                         started = True
                         if pwm.enabled:
                             note = event.message.note
-                            print("ON [EN]: %d" % midinote_to_number(note.note, note.octave))
+                            if DEBUG:
+                                print("ON [EN]: %d" % midinote_to_number(note.note, note.octave))
                             pwm.midinote(midinote_to_number(note.note, note.octave))
                         else:
                             note = event.message.note
-                            print("ON: %d" % midinote_to_number(note.note, note.octave))
+                            if DEBUG:
+                                print("ON: %d" % midinote_to_number(note.note, note.octave))
                             pwm.midinote(midinote_to_number(note.note, note.octave))
                             pwm.enable()
 
                     elif event.command == 128:
                         # note off 
                         note = event.message.note
-                        print("OFF: %d" % (midinote_to_number(note.note, note.octave)))
+                        if DEBUG:
+                            print("OFF: %d" % (midinote_to_number(note.note, note.octave)))
                         pwm.disable()
-                if event_next.time != event.time and started:  # just continue until a note is played
+                if event_next and event_next.time != event.time and started:  # just continue until a note is played
                     sleep(tempo * (event_next.time - event.time))
             except Exception as e:
                 # no channel
                 pass
+        # silence
+        pwm.disable()
 
     t = threading.Thread(target=work, args=(filename, track, channel))
     t.start()
@@ -170,18 +171,26 @@ def main():
     parser.add_argument('-m', '--midifile', type=str, help="Midi filename")
 
     global pwm
+    pwm = PWMAudio(0, 6)
+
+    def signal_handler(sig, frame):
+        pwm.disable()
+        sys.exit(0)
+
+    for sig in ('TERM', 'HUP', 'INT'):
+        signal.signal(getattr(signal, 'SIG'+sig), signal_handler)
+
     args = parser.parse_args()
     if args.mode == "freq":
-        pwm = PWMAudio(0, 6)
         pwm.set(args.frequency)
         pwm.enable()
         sleep(args.duration)
         pwm.disable()
     elif args.mode == 'midi':
-        pwm = PWMAudio(0, 6)
         if args.midifile is None:
             print("--midifile/-m needs to be set")
             exit(1)
+        print("Loading %s ..." % args.midifile)
         play(args.midifile, args.track, args.channel)
 
 if __name__ == '__main__':
