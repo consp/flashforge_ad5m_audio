@@ -163,7 +163,7 @@ def main():
             description='This program can either play a midi file, single track, single note, single chanel or a frequency for a specific duration',
             epilog="See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/consp/flashforge_adm5_audio")
 
-    parser.add_argument('mode', type=str, help="Either midi or freq", choices=['midi', 'freq'])
+    parser.add_argument('mode', type=str, help="Either midi or freq", choices=['midi', 'freq', 'disable'])
     parser.add_argument('-f', '--frequency', type=int, help="Frequency", default=440)
     parser.add_argument('-d', '--duration', type=float, help="Duration of frequency", default=1.0)
     parser.add_argument('-t', '--track', type=int, help="Track of midifile to play", default=0)
@@ -181,7 +181,9 @@ def main():
         signal.signal(getattr(signal, 'SIG'+sig), signal_handler)
 
     args = parser.parse_args()
-    if args.mode == "freq":
+    if args.mode == "disable":
+        pwm.disable()
+    elif args.mode == "freq":
         pwm.set(args.frequency)
         pwm.enable()
         sleep(args.duration)
