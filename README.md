@@ -25,3 +25,8 @@ options:
 
 See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/consp/flashforge_adm5_audio
 ```
+
+
+# License
+
+This work is licensed under CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
