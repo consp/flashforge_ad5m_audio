@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ff-ad5m-audio"
+version = "v0.1"
+dependencies = [ 'midifile' ]
+requires-python = ">= 3.8"
+authors = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ]
+maintainers = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ] 
+description = "Audio library for FlashForge Adventurer 5M, not compatible with other devices"
+readme = "README.md"
+keywords = ["flashforge", "adventurer", "5m", "ad5m", "audio"]
+
+[project.scripts]
+audio = "audio:main"
