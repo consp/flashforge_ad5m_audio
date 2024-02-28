@@ -26,6 +26,7 @@ options:
 See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/consp/flashforge_adm5_audio
 ```
 
+Midi files must be fixed tempo, any tempo changes are ignored. If your midi file sounds slow this is the reason. The specific duration of the time index determines the tempo.
 
 # License
 
