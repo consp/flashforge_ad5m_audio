@@ -36,8 +36,7 @@ See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/
 
 Play a midi file:
 ```
-$ audio midi -m level1.mid -c 6 -p 6 -v
-audio midi -m level1.mid -c 1 -p 6 -v
+$ audio midi -m level1.mid -c 1 -p 6 -v
 Opening pwm  6
 Loading level1.mid ...
 Looking for track 1
