@@ -34,6 +34,49 @@ options:
 See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/consp/flashforge_adm5_audio
 ```
 
+Play a midi file:
+```
+$ audio midi -m level1.mid -c 6 -p 6 -v
+audio midi -m level1.mid -c 1 -p 6 -v
+Opening pwm  6
+Loading level1.mid ...
+Looking for track 1
+Copyright  © 1993, id Software
+Copyright  © 1994, Microsoft
+Tempo change: 560 1000000 0
+Note ON: 40
+Note ON: 36
+Note ON: 40
+Note ON: 41
+Note ON: 40
+Rest:  0.04285714285714286
+Note OFF: 40
+Rest:  0.049999999999999996
+Note OFF: 40
+Rest:  0.02857142857142857
+Note OFF: 36
+Rest:  0.014285714285714285
+Note ON: 40
+Rest:  0.007142857142857143
+Note OFF: 40
+Rest:  0.007142857142857143
+Note OFF: 41
+Rest:  0.12142857142857143
+...
+```
+
+Play a frequency for a duration:
+```
+$ audio freq -f 440 -d 1
+< 440hz will sound for 1 second >
+```
+
+Disable pwm chanel
+```
+$ audio disable
+```
+
+
 # In code
 
 If you want to use the simple pwm device in python:
