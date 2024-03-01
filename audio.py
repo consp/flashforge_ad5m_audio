@@ -1,84 +1,33 @@
-from MIDI import MIDIFile
+#from MIDI import MIDIFile
+import mido
 from time import sleep
+from PWM import PWMAudio
 import signal
 import sys
 import threading
 import argparse
 
 DEBUG = False
-
+NOPWM = False
 pwm = None
 
 # needed due to how it's played
-class PWMAudio:
-    chip = 0
-    device = 0
-    PWMCLASS = "/sys/class/pwm/pwmchip%d/pwm%d/%s"
-    ENABLE = "enable"
-    PERIOD = "period"
-    DUTY_CYCLE = "duty_cycle"
+# def midinote(note, reference=440):
+#     frequency = midinumber_to_frequency(note, reference) 
+#     self.set(frequency)
 
-    DC = 0.5  # fixed
-    enabled = False
+def midinumber_to_frequency(number, reference=440, pitch=0):
+    if pitch == 0:
+        return (reference / 32) * (2 ** ((number - 9) / 12))
+    elif pitch < 0:
+        freq = (reference / 32) * (2 ** ((number - 9) / 12))
+        down = (reference / 32) * (2 ** ((number - 9 - 12) / 12))
+        return freq - ((freq - down) * (pitch / 8192))
+    else:
+        up = (reference / 32) * (2 ** ((number - 9 + 12) / 12))
+        freq = (reference / 32) * (2 ** ((number - 9) / 12))
+        return freq + ((up - freq) * (pitch / 8192))
 
-    def __init__(self, chip, device):
-        self.chip = chip
-        self.device = device
-        self.disable()
-
-    def pwmdevice(self, end):
-        return self.PWMCLASS % (self.chip, self.device, end)
-
-    def enable(self, enable=True):
-        self.enabled = enable
-        
-        if self.period == 0:  # period needs to be set otherwise errors will be thrown
-            self.set(1000)
-        with open(self.pwmdevice(self.ENABLE), "wb") as f:
-            f.write(b"1" if enable else b"0")
-            f.flush
-
-    def disable(self):
-        self.enable(enable=False)
-
-    @property
-    def period(self):
-        with open(self.pwmdevice(self.PERIOD), "rb") as f:
-            return int(f.read())
-
-    @period.setter
-    def period(self, period):
-        with open(self.pwmdevice(self.PERIOD), "wb") as f:
-            f.write(b"%d" % period)
-            f.flush()
-
-    @property
-    def duty_cycle(self):
-        with open(self.pwmdevice(self.DUTY_CYCLE), "rb") as f:
-            return int(f.read())
-
-    @duty_cycle.setter
-    def duty_cycle(self, dc):
-        with open(self.pwmdevice(self.DUTY_CYCLE), "wb") as f:
-            f.write(b"%d" % dc)
-            f.flush()
-
-    def set(self, frequency):
-        period = 1000000000 / frequency
-        dc = int(period * self.DC)
-        if period < self.duty_cycle:
-            self.duty_cycle = dc
-            self.period = period
-        else:
-            self.period = period
-            self.duty_cycle = dc
-
-    def midinote(self, note, reference=440):
-        frequency = midinumber_to_frequency(note, reference) 
-        self.set(frequency)
-
-def midinumber_to_frequency(number, reference=440):
-    return (reference / 32) * (2 ** ((number - 9) / 12))
 
 def midinote_to_number(note, octave):
     m = {
@@ -107,53 +56,75 @@ def midinote_to_number(note, octave):
 
 
 
-def play(filename, track, channel):
-    def work(filename, track, channel):
-        midi = MIDIFile(filename)
-        midi.parse()
-        track = midi.tracks[track]
-        track.parse()
+def play(filename, channel, pwm=None):
+    def work(filename, channel, pwm):
+        midi = mido.MidiFile(filename)
+        tracks = midi.tracks
+
+        ticks_per_beat = midi.ticks_per_beat
+        tempo = 0
+        track_to_play = None
         if DEBUG:
-            print(midi.division.division)
-        tempo = 1 / midi.division.division
+            print("Looking for track %s" % (str(channel)))
+        # find track containing channel to play
+        for track in tracks:
+            for msg in track:
+                if msg.type in ['control_change', 'note_on', 'note_off'] and msg.channel == channel:
+                    track_to_play = track
+                    break
+            if track_to_play is not None:
+                break
 
         started = False
 
-        for i in range(0, len(track.events)):
-            event = track.events[i]
-            event_next = track.events[i+1] if i < len(track.events) - 1 else None
-            try:
-                if event.channel == channel:
-                    if event.command == 144:
-                        # note on
-                        started = True
-                        if pwm.enabled:
-                            note = event.message.note
-                            if DEBUG:
-                                print("ON [EN]: %d" % midinote_to_number(note.note, note.octave))
-                            pwm.midinote(midinote_to_number(note.note, note.octave))
-                        else:
-                            note = event.message.note
-                            if DEBUG:
-                                print("ON: %d" % midinote_to_number(note.note, note.octave))
-                            pwm.midinote(midinote_to_number(note.note, note.octave))
-                            pwm.enable()
+        if track_to_play is None:
+            print("Channel %d not found" % channel)
+            return
 
-                    elif event.command == 128:
-                        # note off 
-                        note = event.message.note
-                        if DEBUG:
-                            print("OFF: %d" % (midinote_to_number(note.note, note.octave)))
+        # play index track and track to play
+        if track_to_play == tracks[0]: # only one track
+            tracks = [tracks[0]]
+        else:
+            tracks = [tracks[0], track_to_play]
+        pitch = 0
+        note = 0
+
+        for track in tracks:
+            for event in track:
+                interval = mido.tick2second(event.time, ticks_per_beat, tempo)
+                if DEBUG and interval > 0:
+                    print("Rest: ", interval)
+                sleep(interval)
+                if event.type == 'copyright':
+                    print("Copyright ", event.text)
+                elif event.type == "track_name":
+                    print("Track: ", event.name)
+                elif event.type == 'set_tempo':
+                    tempo = event.tempo
+                    if DEBUG:
+                        print("Tempo change: %d %d %d" % (ticks_per_beat, tempo, interval))
+                elif event.type == 'note_on':
+                    note = event.note
+                    if DEBUG:
+                        print("Note ON: %d" % event.note)
+                    if pwm:
+                        pwm.set(midinumber_to_frequency(note, pitch=pitch))
+                        pwm.enable()
+                elif event.type == 'note_off':
+                    if DEBUG:
+                        print("Note OFF: %d" % event.note)
+                    if pwm:
                         pwm.disable()
-                if event_next and event_next.time != event.time and started:  # just continue until a note is played
-                    sleep(tempo * (event_next.time - event.time))
-            except Exception as e:
-                # no channel
-                pass
+                elif event.type == "pitchwheel":
+                    pitch = event.pitch
+                    if DEBUG:
+                        print("Pitch change by %d" % event.pitch)
+                    if pwm:
+                        pwm.set(midinumber_to_frequency(note, pitch=pitch))
         # silence
         pwm.disable()
 
-    t = threading.Thread(target=work, args=(filename, track, channel))
+    t = threading.Thread(target=work, args=(filename, channel, pwm))
     t.start()
 
 
@@ -166,12 +137,27 @@ def main():
     parser.add_argument('mode', type=str, help="Either midi or freq", choices=['midi', 'freq', 'disable'])
     parser.add_argument('-f', '--frequency', type=int, help="Frequency", default=440)
     parser.add_argument('-d', '--duration', type=float, help="Duration of frequency", default=1.0)
-    parser.add_argument('-t', '--track', type=int, help="Track of midifile to play", default=0)
     parser.add_argument('-c', '--channel', type=int, help="Channel of track to play", default=0)
     parser.add_argument('-m', '--midifile', type=str, help="Midi filename")
+    parser.add_argument('-p', '--pwm', type=int, help="pwm device to use", default=6)
+    parser.add_argument('-v', '--verbose', action="store_true", default=False)
+    parser.add_argument('--nopwm', action='store_true', default=False)
 
-    global pwm
-    pwm = PWMAudio(0, 6)
+    args = parser.parse_args()
+
+    global DEBUG
+    global NOPWM
+    DEBUG = args.verbose
+    NOPWM = args.nopwm
+
+    if not NOPWM:
+        if DEBUG:
+            print("Opening pwm ", args.pwm)
+        pwm = PWMAudio(0, args.pwm)
+    else:
+        if DEBUG:
+            print("PWM driver disabled")
+        pwm = None
 
     def signal_handler(sig, frame):
         pwm.disable()
@@ -180,10 +166,9 @@ def main():
     for sig in ('TERM', 'HUP', 'INT'):
         signal.signal(getattr(signal, 'SIG'+sig), signal_handler)
 
-    args = parser.parse_args()
-    if args.mode == "disable":
+    if args.mode == "disable" and not NOPWM:
         pwm.disable()
-    elif args.mode == "freq":
+    elif args.mode == "freq" and not NOPWM:
         pwm.set(args.frequency)
         pwm.enable()
         sleep(args.duration)
@@ -193,7 +178,12 @@ def main():
             print("--midifile/-m needs to be set")
             exit(1)
         print("Loading %s ..." % args.midifile)
-        play(args.midifile, args.track, args.channel)
+        try:
+            play(args.midifile, args.channel, pwm)
+        except Exception as e:
+            if pwm:
+                pwm.disable()
+            raise
 
 if __name__ == '__main__':
     main()
