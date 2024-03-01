@@ -215,8 +215,8 @@ def main():
     parser.add_argument('-c', '--channel', type=int, help="Channel of track to play", default=0)
     parser.add_argument('-m', '--midifile', type=str, help="Midi filename")
     parser.add_argument('-p', '--pwm', type=int, help="pwm device to use", default=6)
-    parser.add_argument('-v', '--verbose', action="store_true", default=False)
-    parser.add_argument('--nopwm', action='store_true', default=False)
+    parser.add_argument('-v', '--verbose', action="store_true", default=False, help="Be verbose (might slow down playback in case of heavy pitch changes)")
+    parser.add_argument('--nopwm', action='store_true', default=False, help="Disable PWM driver, used for testing midi file reading")
 
     args = parser.parse_args()
 
