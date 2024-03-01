@@ -34,6 +34,19 @@ options:
 See https://github.com/xblax/flashforge_adm5_klipper_mod and https://github.com/consp/flashforge_adm5_audio
 ```
 
+# In code
+
+If you want to use the simple pwm device in python:
+
+```
+$ python3
+>>> from audio import PWMAudio
+>>> p = PWMAudio(0, 6) # chip, pwm number
+>>> p.set(1000) # set frequency to 1000hz
+>>> p.enable() # enable
+>>> p.disable() # disable (e.g. when your ears start bleeding)
+```
+
 # License
 
 This work is licensed under CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
