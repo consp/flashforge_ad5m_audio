@@ -3,13 +3,13 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ff-ad5m-audio"
-version = "v0.2"
+name = "PROJECT_NAME"
+version = "v0.3"
 dependencies = [ 'mido' ]
 requires-python = ">= 3.8"
 authors = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ]
 maintainers = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ] 
-description = "Audio library for FlashForge Adventurer 5M, not compatible with other devices"
+description = "Audio library for FlashForge Adventurer 5M using the pwm device as audio output to play frequencies and midi files."
 readme = "README.md"
 keywords = ["flashforge", "adventurer", "5m", "ad5m", "audio"]
 
