@@ -5,6 +5,8 @@ Can also be used to play on other linux devices which use a simple PWM driver as
 
 Note: midi files online are a mess, you might have to seek a while. Try finding the channel with piano or other keytype instrument, usually works best.
 
+**_Warning: you need to figure out yourself how to get root or custom linux-es on the device. This repo will not explain how to get stuff on the device_**
+
 Usage:
 
 ```
