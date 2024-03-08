@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PROJECT_NAME"
-version = "v0.3"
+version = "v0.4"
 dependencies = [ 'mido' ]
 requires-python = ">= 3.8"
 authors = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ]
 maintainers = [ {name = "Tristan Timmermans", email = "none@yourbusiness.nowhere"} ] 
 description = "Audio library for FlashForge Adventurer 5M using the pwm device as audio output to play frequencies and midi files."
 readme = "README.md"
-keywords = ["flashforge", "adventurer", "5m", "ad5m", "audio"]
+keywords = ["flashforge", "adventurer", "5m", "ad5m", "audio", "adm5"]
 
 [project.scripts]
 audio = "audio:main"
